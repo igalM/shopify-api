@@ -1,11 +1,9 @@
 import { Service } from "typedi";
-import parseEnvFile from '../helpers/parseEnvFile';
-import saveVariantsAsJSON from '../helpers/writeFile';
-import getVariantsFromFile from '../helpers/readFile';
+import * as FilesHelper from '../helpers/filesHelper';
 import { ClientStore } from "../models/client.store";
 import { Variant } from "../models/variant";
 import Shopify from "shopify-api-node";
-import * as Bluebird from 'bluebird';
+import Bluebird from 'bluebird';
 
 @Service()
 export class StoreRepository {
@@ -13,7 +11,7 @@ export class StoreRepository {
     private clientStores: ClientStore[] = [];
 
     constructor() {
-        this.clientStores = parseEnvFile();
+        this.clientStores = FilesHelper.parseEnvFile();
     }
 
     async getAllStores(): Promise<Variant[]> {
@@ -21,7 +19,7 @@ export class StoreRepository {
         const result: Variant[] = [];
         const promises = [];
         for (let i = 0; i < this.clientStores.length; i++) {
-            const variants = getVariantsFromFile(this.clientStores[i].name);
+            const variants = FilesHelper.readJSONFile(this.clientStores[i].name);
             if (variants) {
                 savedVariants.push(...variants);
             }
@@ -54,7 +52,7 @@ export class StoreRepository {
         const params = { limit: 1, fields: ["id", "variants"] };
         const variants = await this.fetchStoreInventory(storeName, [], params);
         const transformedVariants = this.transformVariants(variants);
-        saveVariantsAsJSON(transformedVariants, storeName);
+        FilesHelper.writeJSONFile(transformedVariants, storeName);
         return Promise.resolve(transformedVariants);
     }
 
