@@ -1,8 +1,6 @@
 import "reflect-metadata";
-import {createExpressServer, useContainer} from "routing-controllers";
-import {Container} from "typedi";
-import dotenv from 'dotenv';
-dotenv.config();
+import { createExpressServer, useContainer } from "routing-controllers";
+import { Container } from "typedi";
 
 useContainer(Container);
 

@@ -36,7 +36,7 @@ const addPropertyToObject = (clientStore: ClientStore, property: string, value: 
 const parseEnvFile = () => {
     const envFilePath = path.resolve(process.cwd(), '.env')
     const encoding = 'utf8'
-    const newLine = '\n';
+    const newLine = '\r\n';
     const parsedString = fs.readFileSync(envFilePath, { encoding });
     return parsedString.split(newLine);
 }

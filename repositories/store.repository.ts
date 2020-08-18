@@ -1,57 +1,61 @@
 import { Service } from "typedi";
-import parser from '../helpers/parser';
+import parseEnvFile from '../helpers/parseEnvFile';
+import saveVariantsAsJSON from '../helpers/writeFile';
+import getVariantsFromFile from '../helpers/readFile';
 import { ClientStore } from "../models/client.store";
 import { Variant } from "../models/variant";
 import Shopify from "shopify-api-node";
+import * as Bluebird from 'bluebird';
 
 @Service()
 export class StoreRepository {
 
     private clientStores: ClientStore[] = [];
-    //private storeVariants: Shopify.IProductVariant[] = [];
 
     constructor() {
-        this.clientStores = parser();
+        this.clientStores = parseEnvFile();
     }
 
-    async getAll(): Promise<Variant[]> {
-        const keyValueObj: { [SKU: string]: number } = {};
-        const allStoresVariants: Variant[] = [];
-        // create array of getOne() promises and pass it to child proccess? 
+    async getAllStores(): Promise<Variant[]> {
+        const savedVariants: Variant[] = [];
+        const result: Variant[] = [];
+        const promises = [];
         for (let i = 0; i < this.clientStores.length; i++) {
-            const storeVariants = await this.getOne(this.clientStores[i].name);
-            for (let j = 0; j < storeVariants.length; j++) {
-                const variant = storeVariants[j];
-                if (variant.SKU in keyValueObj) {
-                    keyValueObj[variant.SKU] += variant.amount;
-                } else {
-                    keyValueObj[variant.SKU] = variant.amount;
-                }
+            const variants = getVariantsFromFile(this.clientStores[i].name);
+            if (variants) {
+                savedVariants.push(...variants);
+            }
+            else {
+                promises.push(this.getOneStore(this.clientStores[i].name));
+            }
+        }
+        const allStoresVariants = await Bluebird.Promise.map(promises, (p) => p, { concurrency: 5 });
+        const keyValueObj: { [SKU: string]: number } = {};
+        const flattenedAllVariants: Variant[] = [].concat(...allStoresVariants);
+        if (savedVariants.length > 0) {
+            flattenedAllVariants.push(...savedVariants);
+        }
+        for (const variant of flattenedAllVariants) {
+            if (variant.SKU in keyValueObj) {
+                keyValueObj[variant.SKU] += variant.amount;
+            }
+            else {
+                keyValueObj[variant.SKU] = variant.amount;
             }
         }
         for (const key in keyValueObj) {
-            allStoresVariants.push({
-                SKU: key,
-                amount: keyValueObj[key]
-            });
+            result.push({ SKU: key, amount: keyValueObj[key] });
         }
-        return Promise.resolve(allStoresVariants);
+        return Promise.resolve(result);
     }
 
 
-    async getOne(storeName: string): Promise<Variant[]> {
+    async getOneStore(storeName: string): Promise<Variant[]> {
         const params = { limit: 1, fields: ["id", "variants"] };
         const variants = await this.fetchStoreInventory(storeName, [], params);
-        return Promise.resolve(this.transformVariants(variants));
-    }
-
-    transformVariants(variants: Shopify.IProductVariant[]): Variant[] {
-        return variants.map(variant => (
-            {
-                SKU: variant.sku,
-                amount: variant.inventory_quantity
-            }
-        ));
+        const transformedVariants = this.transformVariants(variants);
+        saveVariantsAsJSON(transformedVariants, storeName);
+        return Promise.resolve(transformedVariants);
     }
 
     async fetchStoreInventory(storeName: string, storeVariants: Shopify.IProductVariant[], params: {}): Promise<Shopify.IProductVariant[]> {
@@ -72,10 +76,15 @@ export class StoreRepository {
         }
         if (inventory.nextPageParameters) {
             return this.fetchStoreInventory(storeName, storeVariants, inventory.nextPageParameters);
-        } else {
+        }
+        else {
             return Promise.resolve(storeVariants);
         }
     }
 
+
+    transformVariants(variants: Shopify.IProductVariant[]): Variant[] {
+        return variants.map(variant => ({ SKU: variant.sku, amount: variant.inventory_quantity }));
+    }
 
 }
