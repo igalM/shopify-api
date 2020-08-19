@@ -4,6 +4,7 @@ import { ClientStore } from "../models/client.store";
 import { Variant } from "../models/variant";
 import Shopify from "shopify-api-node";
 import Bluebird from 'bluebird';
+import { saveVariants, getVariants } from '../helpers/dbFunctions';
 
 @Service()
 export class StoreRepository {
@@ -19,7 +20,7 @@ export class StoreRepository {
         const result: Variant[] = [];
         const promises = [];
         for (let i = 0; i < this.clientStores.length; i++) {
-            const variants = FilesHelper.readJSONFile(this.clientStores[i].name);
+            const variants = await getVariants(this.clientStores[i].name);
             if (variants) {
                 savedVariants.push(...variants);
             }
@@ -52,7 +53,7 @@ export class StoreRepository {
         const params = { limit: 1, fields: ["id", "variants"] };
         const variants = await this.fetchStoreInventory(storeName, [], params);
         const transformedVariants = this.transformVariants(variants);
-        FilesHelper.writeJSONFile(transformedVariants, storeName);
+        saveVariants(storeName, transformedVariants);
         return Promise.resolve(transformedVariants);
     }
 

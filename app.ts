@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { createExpressServer, useContainer } from "routing-controllers";
 import { Container } from "typedi";
+import { connectToDatabase } from './helpers/dbFunctions';
 
 useContainer(Container);
 
@@ -11,7 +12,10 @@ const app = createExpressServer({
 const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
-    console.log('connected to server');
+    console.log(`Listening on ${port}`);
+    connectToDatabase().then(() => {
+        console.log('Connected to database');
+    });
 });
 
 
