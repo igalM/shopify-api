@@ -1,9 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
 import { ClientStore } from '../models/client.store';
-import { Variant } from '../models/variant';
 
-export const parseEnvFile = () => {
+export default () => {
     const clientStores: ClientStore[] = [];
     let clientStore: ClientStore = new ClientStore();
     let number: number = 1;
@@ -22,17 +21,6 @@ export const parseEnvFile = () => {
     });
     clientStores.push(clientStore);
     return clientStores;
-}
-
-export const readJSONFile = (storeName: string): null | Variant[] => {
-    const filePath = path.resolve(process.cwd(), `${storeName}.json`);
-    if (!fs.existsSync(filePath)) return null;
-    const rawData = fs.readFileSync(filePath);
-    return JSON.parse(rawData.toString());
-}
-
-export const writeJSONFile = (data: Variant[], storeName: string) => {
-    fs.writeFile(`${storeName}.json`, JSON.stringify(data), () => null);
 }
 
 const addPropertyToObject = (clientStore: ClientStore, property: string, value: string): ClientStore => {

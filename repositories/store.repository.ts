@@ -1,5 +1,5 @@
 import { Service } from "typedi";
-import * as FilesHelper from '../helpers/filesHelper';
+import parseEnvFile from '../helpers/parseEnvFile';
 import { ClientStore } from "../models/client.store";
 import { Variant } from "../models/variant";
 import Shopify from "shopify-api-node";
@@ -12,7 +12,7 @@ export class StoreRepository {
     private clientStores: ClientStore[] = [];
 
     constructor() {
-        this.clientStores = FilesHelper.parseEnvFile();
+        this.clientStores = parseEnvFile();
     }
 
     async getAllStores(): Promise<Variant[]> {
