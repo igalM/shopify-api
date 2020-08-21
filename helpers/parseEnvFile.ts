@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { ClientStore } from '../models/client.store';
 
 export default () => {
@@ -34,9 +35,10 @@ const addPropertyToObject = (clientStore: ClientStore, property: string, value: 
 
 
 const readEnvFile = () => {
+    const isWindows: boolean = os.platform() === 'win32';
     const envFilePath = path.resolve(process.cwd(), '.env')
-    const encoding = 'utf8'
-    const newLine = '\r\n';
+    const encoding: string = 'utf8'
+    const newLine: string = isWindows ? '\r\n' : '\r';
     const parsedString = fs.readFileSync(envFilePath, { encoding });
     return parsedString.split(newLine);
 }
