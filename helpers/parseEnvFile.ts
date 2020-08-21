@@ -35,10 +35,10 @@ const addPropertyToObject = (clientStore: ClientStore, property: string, value: 
 
 
 const readEnvFile = () => {
-    const isWindows: boolean = os.platform() === 'win32';
+    const isMac: boolean = os.platform() === 'darwin';
     const envFilePath = path.resolve(process.cwd(), '.env')
     const encoding: string = 'utf8'
-    const newLine: string = isWindows ? '\r\n' : '\r';
+    const newLine: string = isMac ? '\r' : '\r\n';
     const parsedString = fs.readFileSync(envFilePath, { encoding });
     return parsedString.split(newLine);
 }
